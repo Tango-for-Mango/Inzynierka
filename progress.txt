@@ -1,0 +1,18 @@
+kontakt z api, pobieranie historii 5 ostatnich meczy dowolny RIOT ID
+
+live server, pobieranie aktualnego czasu w meczu i przedmiotow kupionych przez gracza
+
+riot dragon, odczytywanie kosztu, statystyk, zastosowania przedmiotow TO DO
+
+TO DO live server pobieranie przedmiotow wszystkich graczy, zliczanie złota w przedmiotach
+
+jeśli przeciwnik zloto w ostatnich 2 minutach > twoje złoto + 1000 -> komunikat
+
+FUTURE:
+
+odczytywanie championow przed załadowaniem, zalecenia itemizacji + runy
+
+rozbudowanie pobierania historii meczów -> wskaźnik formy
+
+stronka do wyświetlania tego ladnie, nie w terminalu
+
