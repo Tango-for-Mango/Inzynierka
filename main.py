@@ -4,10 +4,9 @@ import json
 import sqlite3
 import warnings
 
-# Import modułu pobierającego formę graczy (upewnij się, że ścieżka jest poprawna)
 from src.api_clients.riot_api import calculate_player_form
 
-# Ukrywamy ostrzeżenia o lokalnym certyfikacie SSL Riotu
+# Filtrowanie ostrzeżeń o lokalnym certyfikacie SSL Riotu
 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
 LIVE_API_URL = "https://127.0.0.1:2999/liveclientdata/allgamedata"
@@ -96,7 +95,7 @@ async def main_loop():
     MY_CLASS = "Bruiser"
     LOOP_INTERVAL = 10 
     
-    # Zbiór przechowujący nicki graczy, których historia została już sprawdzona w tym meczu
+    # Sprawdzone nicki graczy, mniej zapytań do Riot API w trakcie meczu
     analyzed_players = set()
     
     connector = aiohttp.TCPConnector(ssl=False)
@@ -120,7 +119,7 @@ async def main_loop():
                         
                         for player in data["allPlayers"]:
                             inventory_value = calculate_inventory_value(player.get("items", []), items_dict)
-                            # Live API czasem podaje riotId, czasem summonerName
+                            # Pobieranie RiodId lub summonerName
                             player_name = player.get("riotIdGameName") or player.get("summonerName", "Nieznany")
                             player_tag = player.get("riotIdTagline") or "EUW" # Domyślny tag, jeśli Live API go nie zwróci
                             
@@ -141,9 +140,9 @@ async def main_loop():
                         if income_advice:
                             print(income_advice)
                             
-                        # Pętla po przeciwnikach: analizujemy sprzęt i ich formę
+                        # Przeciwnicy, analizujemy przedmkoty i ich formę
                         for enemy in enemies:
-                            # 1. Sprawdzanie formy (Riot API) - tylko raz na mecz dla danego gracza
+                            # 1. Sprawdzanie formy (Riot API)
                             full_id = f"{enemy['name']}#{enemy['tag']}"
                             if full_id not in analyzed_players:
                                 print(f"Pobieranie historii meczów gracza: {full_id}...")
@@ -154,6 +153,9 @@ async def main_loop():
                                         print(f"🚨 ALERT FORMY: {full_id} ma winstreak! (Winrate: {form['winrate']}%, KDA: {form['kda']})")
                                     else:
                                         print(f"ℹ️ Forma {full_id}: {form['winrate']}% winrate, KDA: {form['kda']}")
+                                else:
+                                    # Wyświetla błąd, jeśli API Riotu odrzuci gracza
+                                    print(f"❌ Błąd pobierania formy dla {full_id}: {form.get('message')}")
                                 
                                 analyzed_players.add(full_id)
                             

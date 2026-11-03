@@ -89,11 +89,11 @@ async def calculate_player_form(session: aiohttp.ClientSession, game_name: str, 
     except Exception as e:
         return {"error": True, "message": str(e)}
 
-# Szybki test działania modułu
+# test
 if __name__ == "__main__":
     async def test_module():
         async with aiohttp.ClientSession() as session:
-            form = await calculate_player_form(session, "Faker", "KR1")
+            form = await calculate_player_form(session, "Adulf Farquuąd", "shrek")
             print(form)
             
     asyncio.run(test_module())
