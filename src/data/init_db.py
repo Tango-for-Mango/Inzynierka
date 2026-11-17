@@ -67,7 +67,7 @@ def init_database():
         ("Azir", "AP", 0, 0, 0), ("Cassiopeia", "AP", 1, 0, 0), ("Fizz", "AP", 0, 0, 0),
         ("Galio", "AP", 0, 0, 0), ("Heimerdinger", "AP", 0, 0, 0), ("Hwei", "AP", 0, 0, 0),
         ("Kassadin", "AP", 0, 0, 0), ("Katarina", "AP", 0, 0, 0), ("LeBlanc", "AP", 0, 0, 0),
-        ("Lissandra", "AP", 0, 0, 0), ("Lux", "AP", 0, 0, 0), ("Malzahar", "AP", 0, 0, 0),
+        ("Lissandra", "AP", 0, 0, 0), ("Lux", "AP", 0, 1, 0), ("Malzahar", "AP", 0, 0, 0),
         ("Naafiri", "AD", 0, 0, 0), ("Neeko", "AP", 0, 0, 0), ("Orianna", "AP", 0, 0, 0),
         ("Qiyana", "AD", 0, 0, 0), ("Ryze", "AP", 0, 0, 0), ("Smolder", "AD", 0, 0, 1),
         ("Sylas", "AP", 1, 0, 0), ("Syndra", "AP", 0, 0, 0), ("Taliyah", "AP", 0, 0, 0),

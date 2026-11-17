@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoL Live Analytics Dashboard</title>
+    <style>
+        :root {
+            --bg-main: #121212;
+            --bg-panel: #1e1e24;
+            --bg-card: #2b2b36;
+            --accent-green: #4caf50;
+            --accent-red: #ff5252;
+            --accent-gold: #ffca28;
+            --border: #383842;
+            --text-main: #e0e0e0;
+            --text-muted: #9e9e9e;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden; /* Brak globalnego scrolla */
+        }
+
+        /* PASEK STANU (TOP) */
+        .topbar {
+            background-color: var(--bg-panel);
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+
+        .status-badge {
+            background: #223322;
+            color: var(--accent-green);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: 1px solid var(--accent-green);
+        }
+
+        .gold-display {
+            font-size: 1.1rem;
+            color: var(--accent-gold);
+            font-weight: bold;
+        }
+
+        /* GŁÓWNY GRID - 3 KOLUMNY */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 20px;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        .panel {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 15px;
+            background-color: rgba(0,0,0,0.2);
+            border-bottom: 1px solid var(--border);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .panel-content {
+            padding: 15px;
+            overflow-y: auto; /* Scroll tylko wewnątrz kolumn jeśli elementów będzie dużo */
+            flex-grow: 1;
+        }
+
+        /* STYLE KART INFORMACYJNYCH */
+        .card {
+            background-color: var(--bg-card);
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            border-left: 4px solid var(--border);
+        }
+
+        .card.form-streak { border-left-color: var(--accent-red); background: rgba(255, 82, 82, 0.1); }
+        .card.form-normal { border-left-color: #2196f3; }
+        .card.economy-lead { border-left-color: var(--accent-red); }
+        .card.economy-advice { border-left-color: var(--accent-gold); }
+        .card.empty { border-left-color: var(--text-muted); opacity: 0.7; }
+
+        /* KARTY PRZEDMIOTÓW */
+        .item-row {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .item-reason {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border-bottom: 1px dashed var(--border);
+            padding-bottom: 6px;
+        }
+
+        .items-gallery {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .item-icon-wrapper {
+            position: relative;
+            width: 48px;
+            height: 48px;
+        }
+
+        .item-icon {
+            width: 100%;
+            height: 100%;
+            border-radius: 6px;
+            border: 1px solid #4a4a5a;
+            object-fit: cover;
+        }
+
+        .item-name-fallback {
+            background: #4a4a5a;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        /* MODAL KONFIGURACYJNY */
+        #configModal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: var(--bg-panel);
+            padding: 30px;
+            border-radius: 12px;
+            width: 320px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .modal-content input, .modal-content select {
+            padding: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: white;
+            border-radius: 6px;
+        }
+
+        .modal-content button {
+            padding: 12px;
+            background: var(--accent-green);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .modal-content button:hover { background: #3d8c40; }
+    </style>
+</head>
+<body>
+
+    <!-- Panel Konfiguracyjny (znika po wypełnieniu) -->
+    <div id="configModal">
+        <div class="modal-content">
+            <h2 style="margin-top:0; color:white;">Ustawienia Systemu</h2>
+            <input type="text" id="riotName" placeholder="Nick w grze">
+            <input type="text" id="riotTag" placeholder="Tag (np. EUNE)">
+            <select id="riotRegion">
+                <option value="eun1">EUNE</option>
+                <option value="euw1">EUW</option>
+            </select>
+            <button onclick="sendSettings()">Rozpocznij Analizę</button>
+            <div id="configMsg" style="font-size: 0.85rem;"></div>
+        </div>
+    </div>
+
+    <!-- Pasek Górny -->
+    <div class="topbar">
+        <div style="font-size: 1.2rem; font-weight: bold;">System Analizy Live</div>
+        <div id="statusBadge" class="status-badge">Oczekiwanie na start...</div>
+        <div id="goldDisplay" class="gold-display">Złoto: 0g</div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard">
+        <!-- Kolumna 1: Forma -->
+        <div class="panel">
+            <div class="panel-header">📊 Forma Przeciwników</div>
+            <div class="panel-content" id="col-forms"></div>
+        </div>
+
+        <!-- Kolumna 2: Ekonomia -->
+        <div class="panel">
+            <div class="panel-header">⚖️ Przewagi w Złocie i Porady</div>
+            <div class="panel-content" id="col-economy"></div>
+        </div>
+
+        <!-- Kolumna 3: Przedmioty -->
+        <div class="panel">
+            <div class="panel-header">🛍️ Polecane Przedmioty</div>
+            <div class="panel-content" id="col-items"></div>
+        </div>
+    </div>
+
+    <script>
+        // Słownik przechowujący adresy ikon przedmiotów (np. "Thornmail" -> "3075.png")
+        let itemImages = {};
+
+        // 1. Pobieranie bazy obrazków przedmiotów z Riot Data Dragon przy starcie strony
+        async function loadDdragonItems() {
+            try {
+                const verRes = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
+                const versions = await verRes.json();
+                const latest = versions[0]; // np. "14.8.1"
+                
+                // Używamy angielskich nazw przedmiotów, żeby pasowały do tych wpisanych w Twojej bazie SQLite
+                const itemsRes = await fetch(`https://ddragon.leagueoflegends.com/cdn/${latest}/data/en_US/item.json`);
+                const itemsJson = await itemsRes.json();
+
+                for (let id in itemsJson.data) {
+                    const itemName = itemsJson.data[id].name;
+                    itemImages[itemName] = `https://ddragon.leagueoflegends.com/cdn/${latest}/img/item/${id}.png`;
+                }
+                console.log("Załadowano ikony z Data Dragon dla", Object.keys(itemImages).length, "przedmiotów.");
+            } catch (err) {
+                console.error("Błąd pobierania ikon Data Dragon:", err);
+            }
+        }
+        loadDdragonItems();
+
+        // 2. Wysyłanie ustawień
+        async function sendSettings() {
+            const data = {
+                riot_name: document.getElementById('riotName').value,
+                riot_tag: document.getElementById('riotTag').value,
+                region: document.getElementById('riotRegion').value
+            };
+            if (!data.riot_name || !data.riot_tag) {
+                document.getElementById('configMsg').innerText = "Wypełnij nick i tag!";
+                document.getElementById('configMsg').style.color = "#ff5252";
+                return;
+            }
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (response.ok) {
+                    document.getElementById('configModal').style.display = "none";
+                }
+            } catch (e) {
+                document.getElementById('configMsg').innerText = "Błąd serwera. Czy main.py działa?";
+            }
+        }
+
+        // 3. Główna pętla odświeżająca UI
+        async function fetchState() {
+            if (document.getElementById('configModal').style.display !== "none") return;
+
+            try {
+                const response = await fetch('/api/state');
+                const state = await response.json();
+
+                document.getElementById('statusBadge').innerText = state.status;
+                document.getElementById('goldDisplay').innerText = `Złoto: ${state.player_gold}g`;
+
+                const colForms = document.getElementById('col-forms');
+                const colEconomy = document.getElementById('col-economy');
+                const colItems = document.getElementById('col-items');
+
+                // Czyszczenie kolumn
+                colForms.innerHTML = '';
+                colEconomy.innerHTML = '';
+                colItems.innerHTML = '';
+
+                if (!state.threats || state.threats.length === 0 || state.threats[0].includes("Brak wykrytych zagrożeń")) {
+                    colForms.innerHTML = '<div class="card empty">Brak danych o przeciwnikach.</div>';
+                    colEconomy.innerHTML = '<div class="card empty">Ekonomia zbalansowana.</div>';
+                    colItems.innerHTML = '<div class="card empty">Brak rekomendacji.</div>';
+                    return;
+                }
+
+                // Parsowanie zagrożeń z backendu do odpowiednich bloków
+                state.threats.forEach(threat => {
+                    // 1. Blok Formy (Wszystko co ma 🚨, 📊 lub mówi o braku danych)
+                    if (threat.includes("🚨") || threat.includes("📊") || (threat.includes("⚠️") && threat.includes("Brak danych o meczach"))) {
+                        let cssClass = threat.includes("🚨") ? "form-streak" : "form-normal";
+                        let text = threat.replace("🚨 ZAGROŻENIE:", "🔥");
+                        colForms.innerHTML += `<div class="card ${cssClass}">${text}</div>`;
+                    }
+                    // 2. Rozdzielenie Ekonomii i Przedmiotów (Złota Tarcza 🛡️)
+                    else if (threat.includes("🛡️")) {
+                        const parts = threat.split("Rozważ: ");
+                        const threatText = parts[0].replace("🛡️ ZAGROŻENIE:", "⚠️ Przewaga:");
+                        
+                        colEconomy.innerHTML += `<div class="card economy-lead">${threatText}</div>`;
+
+                        if (parts.length > 1) {
+                            const itemsStr = parts[1].replace(".", "");
+                            const itemNames = itemsStr.split(", ");
+                            
+                            let galleryHtml = '';
+                            itemNames.forEach(name => {
+                                const cleanName = name.trim();
+                                if (itemImages[cleanName]) {
+                                    galleryHtml += `
+                                        <div class="item-icon-wrapper" title="${cleanName}">
+                                            <img src="${itemImages[cleanName]}" class="item-icon" alt="${cleanName}">
+                                        </div>`;
+                                } else {
+                                    galleryHtml += `<span class="item-name-fallback">${cleanName}</span>`;
+                                }
+                            });
+
+                            const enemyMatch = threatText.match(/Przewaga: (.*?) \(/);
+                            const enemyName = enemyMatch ? enemyMatch[1] : "Wroga";
+
+                            colItems.innerHTML += `
+                                <div class="item-row">
+                                    <div class="item-reason">Kontra na: <b>${enemyName}</b></div>
+                                    <div class="items-gallery">${galleryHtml}</div>
+                                </div>`;
+                        }
+                    }
+                    // 3. CAŁA RESZTA (Ostrzeżenia o farmie, braki w bazie SQLite)
+                    else {
+                        colEconomy.innerHTML += `<div class="card economy-advice">${threat}</div>`;
+                    }
+                });
+
+            } catch (e) {
+                console.error("Błąd pobierania danych:", e);
+            }
+        }
+
+        setInterval(fetchState, 5000);
+    </script>
+</body>
+</html>

@@ -14,8 +14,10 @@ if not API_KEY:
 HEADERS = {"X-Riot-Token": API_KEY}
 
 async def get_puuid(session: aiohttp.ClientSession, game_name: str, tag_line: str) -> str:
+    # Kodowanie znaków, nie wywala bledu przy spacji w nicku
     safe_name = urllib.parse.quote(game_name)
     safe_tag = urllib.parse.quote(tag_line)
+    
     url = f"https://{REGION_ROUTING}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{safe_name}/{safe_tag}"
     
     async with session.get(url, headers=HEADERS) as response:
@@ -23,19 +25,24 @@ async def get_puuid(session: aiohttp.ClientSession, game_name: str, tag_line: st
         data = await response.json()
         return data["puuid"]
 
-async def get_last_5_matches(session: aiohttp.ClientSession, puuid: str) -> list[str]:
-    url = f"https://{REGION_ROUTING}.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?count=5"
+async def get_last_5_matches(session: aiohttp.ClientSession, puuid: str) -> list:
+    url = f"https://{REGION_ROUTING}.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count=5"
     
+    # Obowiązkowe dodanie headers=HEADERS
     async with session.get(url, headers=HEADERS) as response:
         response.raise_for_status()
         return await response.json()
 
-async def parse_match_stats(session: aiohttp.ClientSession, match_id: str, puuid: str) -> dict | None:
+async def parse_match_stats(session: aiohttp.ClientSession, match_id: str, puuid: str) -> dict:
     url = f"https://{REGION_ROUTING}.api.riotgames.com/lol/match/v5/matches/{match_id}"
     
+    # Obowiązkowe dodanie headers=HEADERS
     async with session.get(url, headers=HEADERS) as response:
-        response.raise_for_status()
+        if response.status != 200:
+            return None
         data = await response.json()
+        
+        # ... (tutaj reszta Twojego kodu wyciągająca Kille, Śmierci itp, nic nie zmieniaj!) ...
 
     info = data["info"]
     participant = next((p for p in info["participants"] if p["puuid"] == puuid), None)
